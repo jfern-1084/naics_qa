@@ -46,20 +46,25 @@ Return:
 inputs = tokenizer.apply_chat_template(
     messages,
     add_generation_prompt=True,
-    return_tensors="pt",
+    enable_thinking=False,
     tokenize=True,
+    return_tensors="pt",
     return_dict=True,
 ).to(model.device)
+
+prompt_length = inputs["input_ids"].shape[-1]
 
 with torch.inference_mode():
     output = model.generate(
         **inputs,
         max_new_tokens=300,
-        do_sample=False,
+        do_sample=True,
         repetition_penalty=1.1,
+        top_k=50,
+        pad_token_id=tokenizer.eos_token_id,
     )
 
-new_tokens = output[0, inputs["input_ids"].shape]
-response = tokenizer.decode(new_tokens, skip_special_tokens=True)
+new_tokens = output[0, prompt_length:]
+response = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
 print(response)
